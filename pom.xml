@@ -47,8 +47,23 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.6</maven.compiler.source>
         <maven.compiler.target>${maven.compiler.source}</maven.compiler.target>
+        <dependency.spring.version>3.2.2.RELEASE</dependency.spring.version>
+        <dependency.json.version>20080701</dependency.json.version>
         <dependency.jetty.version>9.0.0.v20130308</dependency.jetty.version>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>${dependency.spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>${dependency.json.version}</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -77,6 +92,7 @@
                 <version>${dependency.jetty.version}</version>
                 <configuration>
                     <scanIntervalSeconds>10</scanIntervalSeconds>
+                    <useTestScope>true</useTestScope>
                 </configuration>
             </plugin>
         </plugins>
