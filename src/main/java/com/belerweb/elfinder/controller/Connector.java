@@ -1,7 +1,10 @@
 package com.belerweb.elfinder.controller;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.commons.codec.binary.Base64;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -13,11 +16,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.belerweb.elfinder.bean.Directory;
+import com.belerweb.elfinder.bean.FileItem;
+import com.belerweb.elfinder.bean.Volume;
 
 @Controller
 public class Connector implements InitializingBean {
 
+  private static final Map<String, Volume> VOLUME = new HashMap<String, Volume>();
+
   private static final String CONNECTOR = "/connector.elfinder";
+  private static final String DEFAULT_VOLUME = "V0_";
 
   private static final String CMD_OPEN = "cmd=open";
   private static final String CMD_FILE = "cmd=file";
@@ -47,7 +55,6 @@ public class Connector implements InitializingBean {
 
   private static final Integer VERSION = 2;
   private static final Boolean TRUE = new Boolean(true);
-  private static File ROOT = null;
 
   @RequestMapping(value = CONNECTOR, params = CMD_OPEN)
   @ResponseBody
@@ -55,22 +62,29 @@ public class Connector implements InitializingBean {
       @RequestParam(required = false) String target, @RequestParam(required = false) Boolean tree)
       throws JSONException {
     JSONObject result = new JSONObject();
-    if (init == null || !init) {
-      if (target == null) {
-        result.put("error", "target is required");
-        return result.toString();
-      }
-    } else {
-      if (StringUtils.isEmpty(target)) {
-        result.put("cwd", new Directory(ROOT, true));
-      } else {
-        result.put("error", "File not found");
-        return result.toString();
-      }
+    if (TRUE.equals(init)) {
+      // 初始化
       result.put("api", VERSION);
     }
+    Volume volume = retrieveVolume(target);
+    result.put("cwd", volume);
+    JSONArray files = new JSONArray();
+    files.put(volume);
+    for (File file : volume.getFile().listFiles()) {
+      FileItem item = null;
+      if (file.isDirectory()) {
+        item = new Directory();
+      }
+      if (file.isFile()) {
+        item = new FileItem();
+      }
+      if (item != null) {
+        item.setFile(volume, file);
+        files.put(item);
+      }
+    }
 
-    result.put("files", new JSONArray());
+    result.put("files", files);
 
     if (TRUE.equals(tree)) {}
 
@@ -99,6 +113,7 @@ public class Connector implements InitializingBean {
   @ResponseBody
   public String parents(@RequestParam String target) throws JSONException {
     JSONObject result = new JSONObject();
+    result.put("tree", retrieveVolume(target));
     return result.toString();
   }
 
@@ -132,8 +147,22 @@ public class Connector implements InitializingBean {
 
   @RequestMapping(value = CONNECTOR, params = CMD_MKDIR)
   @ResponseBody
-  public String mkdir() throws JSONException {
+  public String mkdir(@RequestParam String target, @RequestParam String name) throws JSONException {
     JSONObject result = new JSONObject();
+    Volume volume = retrieveVolume(target);
+    File dir = new File(volume.getFile(), retrievePath(target));
+    if (!dir.isDirectory()) {
+      result.put("error", "File not found");
+    } else {
+      File newDir = new File(dir, name);
+      if (newDir.mkdir()) {
+        Directory added = new Directory();
+        added.setFile(volume, newDir);
+        result.put("added", added);
+      } else {
+        result.put("error", "Can not mkdir.");
+      }
+    }
     return result.toString();
   }
 
@@ -235,20 +264,34 @@ public class Connector implements InitializingBean {
     return result.toString();
   }
 
+  private Volume retrieveVolume(String target) throws JSONException {
+    Volume defaultVolume = VOLUME.get(DEFAULT_VOLUME);
+    if (StringUtils.isEmpty(target)) {
+      return defaultVolume;
+    }
+    int underline = target.indexOf("_");
+    return VOLUME.get(target.substring(0, underline + 1));
+  }
+
+  private String retrievePath(String target) throws JSONException {
+    return new String(Base64.decodeBase64(target.substring(target.indexOf("_") + 1)));
+  }
+
   @Override
-  public void afterPropertiesSet() throws Exception {
+  public void afterPropertiesSet() {
     String root = System.getProperty(CONFIG_ROOT, System.getenv(CONFIG_ROOT));
     if (root != null) {
-      ROOT = new File(root);
-      if (ROOT.exists()) {
-        if (!ROOT.isDirectory()) {
+      File dir = new File(root);
+      if (dir.exists()) {
+        if (!dir.isDirectory()) {
           // TODO
         }
       } else {
-        if (!ROOT.mkdirs()) {
+        if (!dir.mkdirs()) {
           // TODO
         }
       }
+      VOLUME.put(DEFAULT_VOLUME, new Volume(DEFAULT_VOLUME, null, dir));
     }
   }
 }
