@@ -207,9 +207,21 @@ public class Connector implements InitializingBean {
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_RM)
-  public ResponseEntity<String> rm() {
+  public ResponseEntity<String> rm(@RequestParam("targets[]") String[] targets) {
     Map<String, Object> result = new HashMap<String, Object>();
-    // TODO implements
+    List<String> removed = new ArrayList<String>();
+    for (String target : targets) {
+      Volume volume = retrieveVolume(target);
+      File file = retrieveTarget(volume, target);
+      try {
+        FileUtils.forceDelete(file);
+        removed.add(target);
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+    result.put("removed", removed);
     return generateResponse(result);
   }
 
