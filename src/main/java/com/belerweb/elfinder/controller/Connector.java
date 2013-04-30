@@ -2,6 +2,7 @@ package com.belerweb.elfinder.controller;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -152,19 +153,20 @@ public class Connector implements InitializingBean {
   public ResponseEntity<String> mkdir(@RequestParam String target, @RequestParam String name) {
     Map<String, Object> result = new HashMap<String, Object>();
     Volume volume = retrieveVolume(target);
-    File dir = new File(volume.getFile(), retrievePath(target));
-    if (!dir.isDirectory()) {
-      result.put("error", "File not found");
-    } else {
-      File newDir = new File(dir, name);
-      if (newDir.mkdir()) {
-        Directory added = new Directory();
-        added.setFile(volume, newDir);
-        result.put("added", added);
-      } else {
-        result.put("error", "Can not mkdir.");
-      }
+    File dir = retrieveTarget(volume, target);
+    if (volume == null || dir == null || !dir.isDirectory()) {
+      // TODO file not found
     }
+
+    File newDir = new File(dir, name);
+    if (newDir.mkdir()) {
+      Directory added = new Directory();
+      added.setFile(volume, newDir);
+      result.put("added", Arrays.asList(new Directory[] {added}));
+    } else {
+      result.put("error", "Can not mkdir.");
+    }
+
     return generateResponse(result);
   }
 
