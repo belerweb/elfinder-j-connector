@@ -96,6 +96,9 @@
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
                 <version>${dependency.jetty.version}</version>
+                <configuration>
+                    <useTestScope>true</useTestScope>
+                </configuration>
             </plugin>
         </plugins>
         <pluginManagement>
