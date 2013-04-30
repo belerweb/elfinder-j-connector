@@ -226,14 +226,14 @@ public class Connector implements InitializingBean {
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_RENAME)
-  public ResponseEntity<String> rename() {
+  public ResponseEntity<String> rename(@RequestParam String target, @RequestParam String name) {
     Map<String, Object> result = new HashMap<String, Object>();
     // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_DUPLICATE)
-  public ResponseEntity<String> duplicate() {
+  public ResponseEntity<String> duplicate(@RequestParam("targets[]") String[] targets) {
     Map<String, Object> result = new HashMap<String, Object>();
     // TODO implements
     return generateResponse(result);
