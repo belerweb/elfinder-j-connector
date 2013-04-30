@@ -113,42 +113,49 @@ public class Connector implements InitializingBean {
   @RequestMapping(value = CONNECTOR, params = CMD_FILE)
   public ResponseEntity<String> file() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_TREE)
   public ResponseEntity<String> tree() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_PARENTS)
   public ResponseEntity<String> parents(@RequestParam String target) {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_LS)
   public ResponseEntity<String> ls() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_TMB)
   public ResponseEntity<String> tmb() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_SIZE)
   public ResponseEntity<String> size() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_DIM)
   public ResponseEntity<String> dim() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
@@ -202,24 +209,28 @@ public class Connector implements InitializingBean {
   @RequestMapping(value = CONNECTOR, params = CMD_RM)
   public ResponseEntity<String> rm() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_RENAME)
   public ResponseEntity<String> rename() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_DUPLICATE)
   public ResponseEntity<String> duplicate() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_PASTE)
   public ResponseEntity<String> paste() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
@@ -253,48 +264,56 @@ public class Connector implements InitializingBean {
   @RequestMapping(value = CONNECTOR, params = CMD_GET)
   public ResponseEntity<String> get() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_PUT)
   public ResponseEntity<String> put() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_ARCHIVE)
   public ResponseEntity<String> archive() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_EXTRACT)
   public ResponseEntity<String> extract() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_SEARCH)
   public ResponseEntity<String> search() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_INFO)
   public ResponseEntity<String> info() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_RESIZE)
   public ResponseEntity<String> resize() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_NETMOUNT)
   public ResponseEntity<String> netmount() {
     Map<String, Object> result = new HashMap<String, Object>();
+    // TODO implements
     return generateResponse(result);
   }
 
