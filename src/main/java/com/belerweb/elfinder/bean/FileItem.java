@@ -24,7 +24,7 @@ public class FileItem extends JSONObject {
       String path =
           file.getAbsolutePath().substring(volume.getFile().getAbsolutePath().length())
               .replaceFirst("^[/\\\\]+", "");
-      this.put("hash", volume.getVolumeid() + Base64.encodeBase64String(path.getBytes()));
+      this.put("hash", volume.getVolumeid() + hash(path));
     } catch (JSONException e) {
       e.printStackTrace();
     }
@@ -32,5 +32,9 @@ public class FileItem extends JSONObject {
 
   public File getFile() {
     return file;
+  }
+
+  protected String hash(String name) {
+    return Base64.encodeBase64String(name.getBytes()).replaceAll("=+$", "");
   }
 }
