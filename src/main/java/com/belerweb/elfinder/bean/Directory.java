@@ -10,7 +10,6 @@ public class Directory extends FileItem {
     super.setFile(volume, file);
     this.put("dirs", true);
     this.put("mime", "directory");
-    this.put("phash", volume.get("hash"));
   }
 
 }

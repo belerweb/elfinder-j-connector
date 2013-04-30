@@ -1,18 +1,23 @@
 package com.belerweb.elfinder.controller;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.codec.binary.Base64;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.belerweb.elfinder.bean.Directory;
 import com.belerweb.elfinder.bean.FileItem;
@@ -56,95 +61,95 @@ public class Connector implements InitializingBean {
   private static final Boolean TRUE = new Boolean(true);
 
   @RequestMapping(value = CONNECTOR, params = CMD_OPEN)
-  @ResponseBody
-  public String open(@RequestParam(required = false) Boolean init,
+  public ResponseEntity<String> open(@RequestParam(required = false) Boolean init,
       @RequestParam(required = false) String target, @RequestParam(required = false) Boolean tree) {
     Map<String, Object> result = new HashMap<String, Object>();
-    if (TRUE.equals(init)) {
-      // 初始化
-      result.put("api", VERSION);
-    }
     Volume volume = retrieveVolume(target);
-    result.put("cwd", volume);
-    JSONArray files = new JSONArray();
-    files.put(volume);
-    for (File file : volume.getFile().listFiles()) {
-      FileItem item = null;
-      if (file.isDirectory()) {
-        item = new Directory();
-      }
-      if (file.isFile()) {
-        item = new FileItem();
-      }
-      if (item != null) {
-        item.setFile(volume, file);
-        files.put(item);
-      }
+    File dir = retrieveTarget(volume, target);
+    if (volume == null || dir == null || !dir.isDirectory()) {
+      // TODO file not found
     }
 
+    if (TRUE.equals(init)) {// init
+      result.put("api", VERSION);
+      // TODO add options
+    }
+
+    FileItem cwd = volume;
+    if (!dir.equals(volume.getFile())) {
+      cwd = new Directory();
+      cwd.setFile(volume, dir);
+    }
+    result.put("cwd", cwd);
+
+
+    List<FileItem> files = new ArrayList<FileItem>();
+    if (TRUE.equals(tree)) {
+      if (!dir.equals(volume.getFile())) {
+        File parent = dir;
+        do {
+          parent = parent.getParentFile();
+          files.addAll(0, listFileItems(volume, parent));
+        } while (!parent.equals(volume.getFile()));
+      }
+      files.add(0, volume);
+    }
+
+    files.add(cwd);
+    files.addAll(listFileItems(volume, dir));
     result.put("files", files);
 
-    if (TRUE.equals(tree)) {}
 
     result.put("uplMaxSize", "32M");
     result.put("options", new JSONObject());
     result.put("netDrivers", new JSONArray());
-
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_FILE)
-  @ResponseBody
-  public String file() {
+  public ResponseEntity<String> file() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_TREE)
-  @ResponseBody
-  public String tree() {
+  public ResponseEntity<String> tree() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_PARENTS)
-  @ResponseBody
-  public String parents(@RequestParam String target) {
+  public ResponseEntity<String> parents(@RequestParam String target) {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_LS)
-  @ResponseBody
-  public String ls() {
+  public ResponseEntity<String> ls() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_TMB)
-  @ResponseBody
-  public String tmb() {
+  public ResponseEntity<String> tmb() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_SIZE)
-  @ResponseBody
-  public String size() {
+  public ResponseEntity<String> size() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_DIM)
-  @ResponseBody
-  public String dim() {
+  public ResponseEntity<String> dim() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_MKDIR)
-  @ResponseBody
-  public String mkdir(@RequestParam String target, @RequestParam String name) {
+  public ResponseEntity<String> mkdir(@RequestParam String target, @RequestParam String name) {
     Map<String, Object> result = new HashMap<String, Object>();
     Volume volume = retrieveVolume(target);
     File dir = new File(volume.getFile(), retrievePath(target));
@@ -164,105 +169,111 @@ public class Connector implements InitializingBean {
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_MKFILE)
-  @ResponseBody
-  public String makefile() {
+  public ResponseEntity<String> makefile() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_RM)
-  @ResponseBody
-  public String rm() {
+  public ResponseEntity<String> rm() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_RENAME)
-  @ResponseBody
-  public String rename() {
+  public ResponseEntity<String> rename() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_DUPLICATE)
-  @ResponseBody
-  public String duplicate() {
+  public ResponseEntity<String> duplicate() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_PASTE)
-  @ResponseBody
-  public String paste() {
+  public ResponseEntity<String> paste() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_UPLOAD)
-  @ResponseBody
-  public String upload() {
+  public ResponseEntity<String> upload() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_GET)
-  @ResponseBody
-  public String get() {
+  public ResponseEntity<String> get() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_PUT)
-  @ResponseBody
-  public String put() {
+  public ResponseEntity<String> put() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_ARCHIVE)
-  @ResponseBody
-  public String archive() {
+  public ResponseEntity<String> archive() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_EXTRACT)
-  @ResponseBody
-  public String extract() {
+  public ResponseEntity<String> extract() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_SEARCH)
-  @ResponseBody
-  public String search() {
+  public ResponseEntity<String> search() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_INFO)
-  @ResponseBody
-  public String info() {
+  public ResponseEntity<String> info() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_RESIZE)
-  @ResponseBody
-  public String resize() {
+  public ResponseEntity<String> resize() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_NETMOUNT)
-  @ResponseBody
-  public String netmount() {
+  public ResponseEntity<String> netmount() {
     Map<String, Object> result = new HashMap<String, Object>();
     return generateResponse(result);
   }
 
-  private String generateResponse(Map<String, Object> result) {
-    return new JSONObject(result).toString();
+  private ResponseEntity<String> generateResponse(Map<String, Object> result) {
+    MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
+    headers.add("Content-Type", "application/json;charset=utf-8");
+    return new ResponseEntity<String>(new JSONObject(result).toString(), headers, HttpStatus.OK);
+  }
+
+  private List<FileItem> listFileItems(Volume volume, File dir) {
+    List<FileItem> items = new ArrayList<FileItem>();
+    for (File file : dir.listFiles()) {
+      FileItem item = null;
+      if (file.isDirectory()) {
+        item = new Directory();
+      }
+      if (file.isFile()) {
+        item = new FileItem();
+      }
+      if (item != null) {
+        item.setFile(volume, file);
+        items.add(item);
+      }
+    }
+    return items;
   }
 
   private Volume retrieveVolume(String target) {
@@ -272,6 +283,16 @@ public class Connector implements InitializingBean {
     }
     int underline = target.indexOf("_");
     return VOLUME.get(target.substring(0, underline + 1));
+  }
+
+  private File retrieveTarget(Volume volume, String target) {
+    if (volume == null) {
+      return null;
+    }
+    if (StringUtils.isEmpty(target) || !target.matches("^[0-9a-zA-Z]+_.*")) {
+      return volume.getFile();
+    }
+    return new File(volume.getFile(), retrievePath(target));
   }
 
   private String retrievePath(String target) {

@@ -69,6 +69,11 @@
             <artifactId>commons-codec</artifactId>
             <version>${dependency.codec.version}</version>
         </dependency>
+        <dependency>
+            <groupId>net.sf.mime-util</groupId>
+            <artifactId>mime-util</artifactId>
+            <version>1.2</version>
+        </dependency>
     </dependencies>
 
     <build>
