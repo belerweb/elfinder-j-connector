@@ -1,6 +1,7 @@
 package com.belerweb.elfinder.controller;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.InitializingBean;
@@ -19,6 +21,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.belerweb.elfinder.bean.Directory;
 import com.belerweb.elfinder.bean.FileItem;
@@ -171,8 +174,28 @@ public class Connector implements InitializingBean {
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_MKFILE)
-  public ResponseEntity<String> makefile() {
+  public ResponseEntity<String> makefile(@RequestParam String target, @RequestParam String name) {
     Map<String, Object> result = new HashMap<String, Object>();
+    Volume volume = retrieveVolume(target);
+    File dir = retrieveTarget(volume, target);
+    if (volume == null || dir == null || !dir.isDirectory()) {
+      // TODO file not found
+    }
+
+    File newFile = new File(dir, name);
+    try {
+      if (newFile.createNewFile()) {
+        FileItem added = new FileItem();
+        added.setFile(volume, newFile);
+        result.put("added", Arrays.asList(new FileItem[] {added}));
+      } else {
+        result.put("error", "Can make file.");
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+      result.put("error", "Can make file.");
+    }
+
     return generateResponse(result);
   }
 
@@ -201,8 +224,29 @@ public class Connector implements InitializingBean {
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_UPLOAD)
-  public ResponseEntity<String> upload() {
+  public ResponseEntity<String> upload(@RequestParam String target,
+      @RequestParam(value = "upload[]") MultipartFile[] files) {
     Map<String, Object> result = new HashMap<String, Object>();
+    Volume volume = retrieveVolume(target);
+    File dir = retrieveTarget(volume, target);
+    if (volume == null || dir == null || !dir.isDirectory()) {
+      // TODO file not found
+    }
+    List<FileItem> added = new ArrayList<FileItem>();
+    for (MultipartFile multipartFile : files) {
+      try {
+        File file = new File(dir, multipartFile.getOriginalFilename());
+        FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), file);
+        FileItem fileItem = new FileItem();
+        fileItem.setFile(volume, file);
+        added.add(fileItem);
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+
+    result.put("added", added);
     return generateResponse(result);
   }
 
