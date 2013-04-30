@@ -6,7 +6,6 @@ import java.util.Map;
 
 import org.apache.commons.codec.binary.Base64;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Controller;
@@ -59,9 +58,8 @@ public class Connector implements InitializingBean {
   @RequestMapping(value = CONNECTOR, params = CMD_OPEN)
   @ResponseBody
   public String open(@RequestParam(required = false) Boolean init,
-      @RequestParam(required = false) String target, @RequestParam(required = false) Boolean tree)
-      throws JSONException {
-    JSONObject result = new JSONObject();
+      @RequestParam(required = false) String target, @RequestParam(required = false) Boolean tree) {
+    Map<String, Object> result = new HashMap<String, Object>();
     if (TRUE.equals(init)) {
       // 初始化
       result.put("api", VERSION);
@@ -92,63 +90,62 @@ public class Connector implements InitializingBean {
     result.put("options", new JSONObject());
     result.put("netDrivers", new JSONArray());
 
-    return result.toString();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_FILE)
   @ResponseBody
-  public String file() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String file() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_TREE)
   @ResponseBody
-  public String tree() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String tree() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_PARENTS)
   @ResponseBody
-  public String parents(@RequestParam String target) throws JSONException {
-    JSONObject result = new JSONObject();
-    result.put("tree", retrieveVolume(target));
-    return result.toString();
+  public String parents(@RequestParam String target) {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_LS)
   @ResponseBody
-  public String ls() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String ls() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_TMB)
   @ResponseBody
-  public String tmb() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String tmb() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_SIZE)
   @ResponseBody
-  public String size() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String size() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_DIM)
   @ResponseBody
-  public String dim() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String dim() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_MKDIR)
   @ResponseBody
-  public String mkdir(@RequestParam String target, @RequestParam String name) throws JSONException {
-    JSONObject result = new JSONObject();
+  public String mkdir(@RequestParam String target, @RequestParam String name) {
+    Map<String, Object> result = new HashMap<String, Object>();
     Volume volume = retrieveVolume(target);
     File dir = new File(volume.getFile(), retrievePath(target));
     if (!dir.isDirectory()) {
@@ -163,108 +160,112 @@ public class Connector implements InitializingBean {
         result.put("error", "Can not mkdir.");
       }
     }
-    return result.toString();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_MKFILE)
   @ResponseBody
-  public String makefile() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String makefile() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_RM)
   @ResponseBody
-  public String rm() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String rm() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_RENAME)
   @ResponseBody
-  public String rename() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String rename() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_DUPLICATE)
   @ResponseBody
-  public String duplicate() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String duplicate() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_PASTE)
   @ResponseBody
-  public String paste() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String paste() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_UPLOAD)
   @ResponseBody
-  public String upload() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String upload() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_GET)
   @ResponseBody
-  public String get() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String get() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_PUT)
   @ResponseBody
-  public String put() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String put() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_ARCHIVE)
   @ResponseBody
-  public String archive() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String archive() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_EXTRACT)
   @ResponseBody
-  public String extract() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String extract() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_SEARCH)
   @ResponseBody
-  public String search() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String search() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_INFO)
   @ResponseBody
-  public String info() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String info() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_RESIZE)
   @ResponseBody
-  public String resize() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String resize() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_NETMOUNT)
   @ResponseBody
-  public String netmount() throws JSONException {
-    JSONObject result = new JSONObject();
-    return result.toString();
+  public String netmount() {
+    Map<String, Object> result = new HashMap<String, Object>();
+    return generateResponse(result);
   }
 
-  private Volume retrieveVolume(String target) throws JSONException {
+  private String generateResponse(Map<String, Object> result) {
+    return new JSONObject(result).toString();
+  }
+
+  private Volume retrieveVolume(String target) {
     Volume defaultVolume = VOLUME.get(DEFAULT_VOLUME);
     if (StringUtils.isEmpty(target)) {
       return defaultVolume;
@@ -273,7 +274,7 @@ public class Connector implements InitializingBean {
     return VOLUME.get(target.substring(0, underline + 1));
   }
 
-  private String retrievePath(String target) throws JSONException {
+  private String retrievePath(String target) {
     return new String(Base64.decodeBase64(target.substring(target.indexOf("_") + 1)));
   }
 
