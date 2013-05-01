@@ -2,6 +2,7 @@ package com.belerweb.elfinder.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,10 +90,31 @@ public class Connector {
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_FILE)
-  public ResponseEntity<String> file() {
-    Map<String, Object> result = new HashMap<String, Object>();
-    // TODO implements
-    return generateResponse(result);
+  public ResponseEntity<?> file(@RequestParam String target,
+      @RequestParam(required = false) Boolean download) throws SQLException {
+    Map<String, Object> cwd = fileSystemService.getCwd(new Target(target));
+    String path = (String) cwd.get("PATH");
+    if (StringUtils.isBlank(path)) {
+      Map<String, Object> result = new HashMap<String, Object>();
+      result.put("error", "Not a file.");
+      return generateResponse(result);
+    }
+
+    MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
+    headers.add("Content-Type", (String) cwd.get("MIME"));
+    try {
+      if (TRUE.equals(download)) {
+        String name = (String) cwd.get("NAME");
+        headers.add("Content-Disposition", "attachment; filename=\""
+            + URLEncoder.encode(name, "UTF-8") + "\";");
+        headers.add("Content-Location", name);
+        headers.add("Content-Transfer-Encoding", "binary");
+      }
+      byte[] data = FileUtils.readFileToByteArray(new File(fileSystemService.getRootDir(), path));
+      return new ResponseEntity<byte[]>(data, headers, HttpStatus.OK);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_TREE)
@@ -170,7 +193,7 @@ public class Connector {
       Map<String, Object> cwd = fileSystemService.getCwd(_target);
       HashMap<String, Object> obj = new HashMap<String, Object>();
       obj.put("name", name);
-      obj.put("mime", MimeUtil.getExtensionMimeTypes(name));
+      obj.put("mime", MimeUtil.getFirstMimeType(MimeUtil.getExtensionMimeTypes(name)));
       obj.put("ts", System.currentTimeMillis());
       obj.put("read", 1);
       obj.put("write", 1);
@@ -243,7 +266,7 @@ public class Connector {
       HashMap<String, Object> obj = new HashMap<String, Object>();
       String name = multipartFile.getOriginalFilename();
       obj.put("name", name);
-      obj.put("mime", MimeUtil.getExtensionMimeTypes(name));
+      obj.put("mime", MimeUtil.getFirstMimeType(MimeUtil.getExtensionMimeTypes(name)));
       obj.put("ts", System.currentTimeMillis());
       obj.put("read", 1);
       obj.put("write", 1);
