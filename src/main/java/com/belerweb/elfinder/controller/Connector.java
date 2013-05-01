@@ -185,9 +185,13 @@ public class Connector {
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_RENAME)
-  public ResponseEntity<String> rename(@RequestParam String target, @RequestParam String name) {
+  public ResponseEntity<String> rename(@RequestParam String target, @RequestParam String name)
+      throws SQLException {
+    Target _target = new Target(target);
+    fileSystemService.rename(_target, name);
     Map<String, Object> result = new HashMap<String, Object>();
-    // TODO implements
+    result.put("removed", new String[] {target});
+    result.put("added", new Object[] {dataConvert(fileSystemService.getCwd(_target))});
     return generateResponse(result);
   }
 

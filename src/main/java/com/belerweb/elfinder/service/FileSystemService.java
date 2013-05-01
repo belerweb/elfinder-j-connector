@@ -104,6 +104,11 @@ public class FileSystemService implements InitializingBean {
     }
   }
 
+  public void rename(Target target, String name) throws SQLException {
+    runner.update(conn, "UPDATE VOLUME_" + target.getVolume() + " SET NAME=? WHERE HASH=?", name,
+        target.getHash());
+  }
+
   @Override
   public void afterPropertiesSet() throws Exception {
     String dir = System.getProperty(CONFIG, System.getenv(CONFIG));
