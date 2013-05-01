@@ -118,9 +118,14 @@ public class Connector {
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_TREE)
-  public ResponseEntity<String> tree() {
+  public ResponseEntity<String> tree(@RequestParam String target) throws SQLException {
     Map<String, Object> result = new HashMap<String, Object>();
-    // TODO implements
+    Target _target = new Target(target);
+    Map<String, Object> cwd = fileSystemService.getCwd(_target);
+    List<Map<String, Object>> files = fileSystemService.getFiles(_target, cwd, false);
+    files.add(0, cwd);
+
+    result.put("tree", dataConvert(files));
     return generateResponse(result);
   }
 
