@@ -1,12 +1,17 @@
 package com.belerweb.elfinder.controller;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +60,7 @@ public class Connector {
 
   private static final Integer VERSION = 2;
   private static final Boolean TRUE = new Boolean(true);
+  private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd/");
 
   @Autowired
   private FileSystemService fileSystemService;
@@ -155,21 +161,29 @@ public class Connector {
   @RequestMapping(value = CONNECTOR, params = CMD_MKFILE)
   public ResponseEntity<String> makefile(@RequestParam String target, @RequestParam String name)
       throws SQLException {
-    Target _target = new Target(target);
-    Map<String, Object> cwd = fileSystemService.getCwd(_target);
-    HashMap<String, Object> obj = new HashMap<String, Object>();
-    obj.put("name", name);
-    obj.put("mime", MimeUtil.getExtensionMimeTypes(name));
-    obj.put("ts", System.currentTimeMillis());
-    obj.put("read", 1);
-    obj.put("write", 1);
-    obj.put("locked", 0);
-    obj.put("size", 0);
-    obj.put("hash", _target.getVolume() + "_" + UUID.randomUUID().toString());
-    obj.put("phash", cwd.get("HASH"));
-    fileSystemService.add(_target, cwd, obj);
     Map<String, Object> result = new HashMap<String, Object>();
-    result.put("added", new Object[] {obj});
+    Target _target = new Target(target);
+    String hash = _target.getVolume() + "_" + UUID.randomUUID().toString();
+    try {
+      String path = generateFile(hash);
+      FileUtils.touch(new File(fileSystemService.getRootDir(), path));
+      Map<String, Object> cwd = fileSystemService.getCwd(_target);
+      HashMap<String, Object> obj = new HashMap<String, Object>();
+      obj.put("name", name);
+      obj.put("mime", MimeUtil.getExtensionMimeTypes(name));
+      obj.put("ts", System.currentTimeMillis());
+      obj.put("read", 1);
+      obj.put("write", 1);
+      obj.put("locked", 0);
+      obj.put("size", 0);
+      obj.put("hash", hash);
+      obj.put("phash", cwd.get("HASH"));
+      obj.put("path", path);
+      fileSystemService.add(_target, cwd, obj);
+      result.put("added", new Object[] {obj});
+    } catch (IOException e) {
+      result.put("error", "Can not create file.");
+    }
     return generateResponse(result);
   }
 
@@ -216,7 +230,15 @@ public class Connector {
     Map<String, Object> result = new HashMap<String, Object>();
     List<Map<String, Object>> added = new ArrayList<Map<String, Object>>();
     for (MultipartFile multipartFile : files) {
-      // TODO SAVE FILE
+      String hash = _target.getVolume() + "_" + UUID.randomUUID().toString();
+      String path = generateFile(hash);
+      try {
+        FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), new File(fileSystemService
+            .getRootDir(), path));
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
       Map<String, Object> cwd = fileSystemService.getCwd(_target);
       HashMap<String, Object> obj = new HashMap<String, Object>();
       String name = multipartFile.getOriginalFilename();
@@ -226,9 +248,10 @@ public class Connector {
       obj.put("read", 1);
       obj.put("write", 1);
       obj.put("locked", 0);
-      obj.put("size", 0);
-      obj.put("hash", _target.getVolume() + "_" + UUID.randomUUID().toString());
+      obj.put("size", multipartFile.getSize());
+      obj.put("hash", hash);
       obj.put("phash", cwd.get("HASH"));
+      obj.put("path", path);
       fileSystemService.add(_target, cwd, obj);
       added.add(obj);
     }
@@ -338,6 +361,10 @@ public class Connector {
       result.add(dataConvert(map));
     }
     return result;
+  }
+
+  private String generateFile(String name) {
+    return DATE_FORMAT.format(new Date()) + name;
   }
 
 }

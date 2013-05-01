@@ -1,6 +1,7 @@
 package com.belerweb.elfinder.service;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -13,6 +14,7 @@ import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.MapHandler;
 import org.apache.commons.dbutils.handlers.MapListHandler;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.hsqldb.Server;
 import org.springframework.beans.factory.InitializingBean;
@@ -30,6 +32,10 @@ public class FileSystemService implements InitializingBean {
   private File rootDir;
   private QueryRunner runner;
   private Connection conn;
+
+  public File getRootDir() {
+    return rootDir;
+  }
 
   public Map<String, Object> getCwd(Target target) throws SQLException {
     return runner.query(conn, "SELECT * FROM VOLUME_" + target.getVolume() + " WHERE HASH = ?",
@@ -99,7 +105,12 @@ public class FileSystemService implements InitializingBean {
         step, rgt);
     for (Map<String, Object> item : items) {
       if (item.get("PATH") != null) {
-        // TODO delete files
+        try {
+          FileUtils.forceDelete(new File(rootDir, (String) item.get("PATH")));
+        } catch (IOException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
       }
     }
   }
