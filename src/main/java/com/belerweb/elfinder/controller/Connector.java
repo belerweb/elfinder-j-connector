@@ -124,15 +124,17 @@ public class Connector {
     Map<String, Object> cwd = fileSystemService.getCwd(_target);
     List<Map<String, Object>> files = fileSystemService.getFiles(_target, cwd, false);
     files.add(0, cwd);
-
     result.put("tree", dataConvert(files));
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_PARENTS)
-  public ResponseEntity<String> parents(@RequestParam String target) {
+  public ResponseEntity<String> parents(@RequestParam String target) throws SQLException {
     Map<String, Object> result = new HashMap<String, Object>();
-    // TODO implements
+    Target _target = new Target(target);
+    Map<String, Object> cwd = fileSystemService.getCwd(_target);
+    List<Map<String, Object>> files = fileSystemService.getFiles(_target, cwd, true);
+    result.put("tree", dataConvert(files));
     return generateResponse(result);
   }
 
