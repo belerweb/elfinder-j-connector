@@ -153,9 +153,15 @@ public class Connector {
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_SIZE)
-  public ResponseEntity<String> size() {
+  public ResponseEntity<String> size(@RequestParam("targets[]") String[] targets)
+      throws SQLException {
+    long size = 0;
+    for (String target : targets) {
+      Map<String, Object> obj = fileSystemService.getCwd(new Target(target));
+      size = size + (Long) obj.get("SIZE");
+    }
     Map<String, Object> result = new HashMap<String, Object>();
-    // TODO implements
+    result.put("size", size);
     return generateResponse(result);
   }
 
