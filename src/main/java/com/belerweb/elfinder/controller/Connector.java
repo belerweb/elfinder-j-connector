@@ -1,39 +1,33 @@
 package com.belerweb.elfinder.controller;
 
-import java.io.File;
-import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.belerweb.elfinder.bean.Directory;
-import com.belerweb.elfinder.bean.FileItem;
-import com.belerweb.elfinder.bean.Volume;
+import com.belerweb.elfinder.bean.Target;
+import com.belerweb.elfinder.service.FileSystemService;
+
+import eu.medsea.util.MimeUtil;
 
 @Controller
-public class Connector implements InitializingBean {
-
-  private static final Map<String, Volume> VOLUME = new HashMap<String, Volume>();
+public class Connector {
 
   private static final String CONNECTOR = "/connector.elfinder";
-  private static final String DEFAULT_VOLUME = "V0_";
 
   private static final String CMD_OPEN = "cmd=open";
   private static final String CMD_FILE = "cmd=file";
@@ -59,51 +53,28 @@ public class Connector implements InitializingBean {
   private static final String CMD_RESIZE = "cmd=resize";
   private static final String CMD_NETMOUNT = "cmd=netmount";
 
-  private static final String CONFIG_ROOT = "elfinder.root";
-
   private static final Integer VERSION = 2;
   private static final Boolean TRUE = new Boolean(true);
 
+  @Autowired
+  private FileSystemService fileSystemService;
+
   @RequestMapping(value = CONNECTOR, params = CMD_OPEN)
   public ResponseEntity<String> open(@RequestParam(required = false) Boolean init,
-      @RequestParam(required = false) String target, @RequestParam(required = false) Boolean tree) {
+      @RequestParam(required = false) String target, @RequestParam(required = false) Boolean tree)
+      throws SQLException {
     Map<String, Object> result = new HashMap<String, Object>();
-    Volume volume = retrieveVolume(target);
-    File dir = retrieveTarget(volume, target);
-    if (volume == null || dir == null || !dir.isDirectory()) {
-      // TODO file not found
-    }
-
     if (TRUE.equals(init)) {// init
       result.put("api", VERSION);
       // TODO add options
     }
 
-    FileItem cwd = volume;
-    if (!dir.equals(volume.getFile())) {
-      cwd = new Directory();
-      cwd.setFile(volume, dir);
-    }
-    result.put("cwd", cwd);
+    Target _target = new Target(target);
+    Map<String, Object> cwd = fileSystemService.getCwd(_target);
+    List<Map<String, Object>> files = fileSystemService.getFiles(_target, cwd, tree);
 
-
-    List<FileItem> files = new ArrayList<FileItem>();
-    if (TRUE.equals(tree)) {
-      if (!dir.equals(volume.getFile())) {
-        File parent = dir;
-        do {
-          parent = parent.getParentFile();
-          files.addAll(0, listFileItems(volume, parent));
-        } while (!parent.equals(volume.getFile()));
-      }
-      files.add(0, volume);
-    }
-
-    files.add(cwd);
-    files.addAll(listFileItems(volume, dir));
-    result.put("files", files);
-
-
+    result.put("cwd", dataConvert(cwd));
+    result.put("files", dataConvert(files));
     result.put("uplMaxSize", "32M");
     result.put("options", new JSONObject());
     result.put("netDrivers", new JSONArray());
@@ -160,68 +131,56 @@ public class Connector implements InitializingBean {
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_MKDIR)
-  public ResponseEntity<String> mkdir(@RequestParam String target, @RequestParam String name) {
+  public ResponseEntity<String> mkdir(@RequestParam String target, @RequestParam String name)
+      throws SQLException {
+    Target _target = new Target(target);
+    Map<String, Object> cwd = fileSystemService.getCwd(_target);
+    HashMap<String, Object> obj = new HashMap<String, Object>();
+    obj.put("name", name);
+    obj.put("mime", "directory");
+    obj.put("ts", System.currentTimeMillis());
+    obj.put("read", 1);
+    obj.put("write", 1);
+    obj.put("locked", 0);
+    obj.put("size", 0);
+    obj.put("hash", _target.getVolume() + "_" + UUID.randomUUID().toString());
+    obj.put("phash", cwd.get("HASH"));
+    // dir.put("dirs", null);
+    fileSystemService.add(_target, cwd, obj);
     Map<String, Object> result = new HashMap<String, Object>();
-    Volume volume = retrieveVolume(target);
-    File dir = retrieveTarget(volume, target);
-    if (volume == null || dir == null || !dir.isDirectory()) {
-      // TODO file not found
-    }
-
-    File newDir = new File(dir, name);
-    if (newDir.mkdir()) {
-      Directory added = new Directory();
-      added.setFile(volume, newDir);
-      result.put("added", Arrays.asList(new Directory[] {added}));
-    } else {
-      result.put("error", "Can not mkdir.");
-    }
-
+    result.put("added", new Object[] {obj});
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_MKFILE)
-  public ResponseEntity<String> makefile(@RequestParam String target, @RequestParam String name) {
+  public ResponseEntity<String> makefile(@RequestParam String target, @RequestParam String name)
+      throws SQLException {
+    Target _target = new Target(target);
+    Map<String, Object> cwd = fileSystemService.getCwd(_target);
+    HashMap<String, Object> obj = new HashMap<String, Object>();
+    obj.put("name", name);
+    obj.put("mime", MimeUtil.getExtensionMimeTypes(name));
+    obj.put("ts", System.currentTimeMillis());
+    obj.put("read", 1);
+    obj.put("write", 1);
+    obj.put("locked", 0);
+    obj.put("size", 0);
+    obj.put("hash", _target.getVolume() + "_" + UUID.randomUUID().toString());
+    obj.put("phash", cwd.get("HASH"));
+    fileSystemService.add(_target, cwd, obj);
     Map<String, Object> result = new HashMap<String, Object>();
-    Volume volume = retrieveVolume(target);
-    File dir = retrieveTarget(volume, target);
-    if (volume == null || dir == null || !dir.isDirectory()) {
-      // TODO file not found
-    }
-
-    File newFile = new File(dir, name);
-    try {
-      if (newFile.createNewFile()) {
-        FileItem added = new FileItem();
-        added.setFile(volume, newFile);
-        result.put("added", Arrays.asList(new FileItem[] {added}));
-      } else {
-        result.put("error", "Can make file.");
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-      result.put("error", "Can make file.");
-    }
-
+    result.put("added", new Object[] {obj});
     return generateResponse(result);
   }
 
   @RequestMapping(value = CONNECTOR, params = CMD_RM)
-  public ResponseEntity<String> rm(@RequestParam("targets[]") String[] targets) {
-    Map<String, Object> result = new HashMap<String, Object>();
-    List<String> removed = new ArrayList<String>();
-    for (String target : targets) {
-      Volume volume = retrieveVolume(target);
-      File file = retrieveTarget(volume, target);
-      try {
-        FileUtils.forceDelete(file);
-        removed.add(target);
-      } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
+  public ResponseEntity<String> rm(@RequestParam("targets[]") String[] targets) throws SQLException {
+    for (String string : targets) {
+      Target target = new Target(string);
+      fileSystemService.delete(target.getVolume(), fileSystemService.getCwd(target));
     }
-    result.put("removed", removed);
+    Map<String, Object> result = new HashMap<String, Object>();
+    result.put("removed", targets);
     return generateResponse(result);
   }
 
@@ -248,25 +207,26 @@ public class Connector implements InitializingBean {
 
   @RequestMapping(value = CONNECTOR, params = CMD_UPLOAD)
   public ResponseEntity<String> upload(@RequestParam String target,
-      @RequestParam(value = "upload[]") MultipartFile[] files) {
+      @RequestParam(value = "upload[]") MultipartFile[] files) throws SQLException {
+    Target _target = new Target(target);
     Map<String, Object> result = new HashMap<String, Object>();
-    Volume volume = retrieveVolume(target);
-    File dir = retrieveTarget(volume, target);
-    if (volume == null || dir == null || !dir.isDirectory()) {
-      // TODO file not found
-    }
-    List<FileItem> added = new ArrayList<FileItem>();
+    List<Map<String, Object>> added = new ArrayList<Map<String, Object>>();
     for (MultipartFile multipartFile : files) {
-      try {
-        File file = new File(dir, multipartFile.getOriginalFilename());
-        FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), file);
-        FileItem fileItem = new FileItem();
-        fileItem.setFile(volume, file);
-        added.add(fileItem);
-      } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
+      // TODO SAVE FILE
+      Map<String, Object> cwd = fileSystemService.getCwd(_target);
+      HashMap<String, Object> obj = new HashMap<String, Object>();
+      String name = multipartFile.getOriginalFilename();
+      obj.put("name", name);
+      obj.put("mime", MimeUtil.getExtensionMimeTypes(name));
+      obj.put("ts", System.currentTimeMillis());
+      obj.put("read", 1);
+      obj.put("write", 1);
+      obj.put("locked", 0);
+      obj.put("size", 0);
+      obj.put("hash", _target.getVolume() + "_" + UUID.randomUUID().toString());
+      obj.put("phash", cwd.get("HASH"));
+      fileSystemService.add(_target, cwd, obj);
+      added.add(obj);
     }
 
     result.put("added", added);
@@ -335,62 +295,45 @@ public class Connector implements InitializingBean {
     return new ResponseEntity<String>(new JSONObject(result).toString(), headers, HttpStatus.OK);
   }
 
-  private List<FileItem> listFileItems(Volume volume, File dir) {
-    List<FileItem> items = new ArrayList<FileItem>();
-    for (File file : dir.listFiles()) {
-      FileItem item = null;
-      if (file.isDirectory()) {
-        item = new Directory();
-      }
-      if (file.isFile()) {
-        item = new FileItem();
-      }
-      if (item != null) {
-        item.setFile(volume, file);
-        items.add(item);
-      }
+  private Map<String, Object> dataConvert(Map<String, Object> obj) {
+    Map<String, Object> result = new HashMap<String, Object>();
+    result.put("name", obj.get("NAME"));
+    result.put("mime", obj.get("mime"));
+    result.put("ts", obj.get("TS"));
+    result.put("size", obj.get("SIZE"));
+    result.put("read", obj.get("READ"));
+    result.put("write", obj.get("WRITE"));
+    result.put("locked", obj.get("LOCKED"));
+    result.put("hash", obj.get("HASH"));
+    if (obj.get("VOLUMEID") != null) {
+      result.put("volumeid", obj.get("VOLUMEID"));// ROOT DIR
+    } else {
+      result.put("phash", obj.get("PHASH"));
     }
-    return items;
+    if (obj.get("DIM") != null) {// image
+      result.put("dim", obj.get("DIM"));
+      result.put("tmb", obj.get("TMB"));
+    }
+    if (obj.get("THASH") != null) {// symlinks
+      result.put("thash", obj.get("THASH"));
+      result.put("alias", obj.get("ALIAS"));
+    }
+    // if (obj.get("DIRS") != null) {
+    // result.put("dirs", obj.get("DIRS"));
+    // }
+    if ((Integer) obj.get("RGT") - (Integer) obj.get("LFT") > 2) {
+      result.put("dirs", 1);
+    }
+
+    return result;
   }
 
-  private Volume retrieveVolume(String target) {
-    Volume defaultVolume = VOLUME.get(DEFAULT_VOLUME);
-    if (StringUtils.isEmpty(target)) {
-      return defaultVolume;
+  private List<Map<String, Object>> dataConvert(List<Map<String, Object>> objs) {
+    List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+    for (Map<String, Object> map : objs) {
+      result.add(dataConvert(map));
     }
-    int underline = target.indexOf("_");
-    return VOLUME.get(target.substring(0, underline + 1));
+    return result;
   }
 
-  private File retrieveTarget(Volume volume, String target) {
-    if (volume == null) {
-      return null;
-    }
-    if (StringUtils.isEmpty(target) || !target.matches("^[0-9a-zA-Z]+_.*")) {
-      return volume.getFile();
-    }
-    return new File(volume.getFile(), retrievePath(target));
-  }
-
-  private String retrievePath(String target) {
-    return new String(Base64.decodeBase64(target.substring(target.indexOf("_") + 1)));
-  }
-
-  @Override
-  public void afterPropertiesSet() {
-    String root = System.getProperty(CONFIG_ROOT, System.getenv(CONFIG_ROOT));
-    if (root != null) {
-      File dir = new File(root);
-      if (dir.exists()) {
-        if (!dir.isDirectory()) {
-          // TODO
-        }
-      } else {
-        if (!dir.mkdirs()) {
-          // TODO
-        }
-      }
-      VOLUME.put(DEFAULT_VOLUME, new Volume(DEFAULT_VOLUME, null, dir));
-    }
-  }
 }
