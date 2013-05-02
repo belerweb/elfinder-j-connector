@@ -22,7 +22,7 @@
 		<!-- elFinder initialization (REQUIRED) -->
 		<script type="text/javascript" charset="utf-8">
 			var tmp = location.hostname.split('.').reverse();
-			document.domain = tmp[1] + tmp[0];
+			document.domain = tmp[1] + '.' + tmp[0];
 			$().ready(function() {
 				var elf = $('#elfinder').elfinder({
 					url : 'connector.elfinder'  // connector URL (REQUIRED)
