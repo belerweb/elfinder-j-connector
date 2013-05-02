@@ -23,6 +23,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -66,6 +67,11 @@ public class Connector {
 
   @Autowired
   private FileSystemService fileSystemService;
+
+  @RequestMapping(value = CONNECTOR, method = RequestMethod.OPTIONS)
+  public ResponseEntity<String> option() {
+    return generateResponse(null);
+  }
 
   @RequestMapping(value = CONNECTOR, params = CMD_OPEN)
   public ResponseEntity<String> open(@RequestParam(required = false) Boolean init,
