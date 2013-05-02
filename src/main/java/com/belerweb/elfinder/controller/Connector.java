@@ -355,6 +355,7 @@ public class Connector {
   private ResponseEntity<String> generateResponse(Map<String, Object> result) {
     MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
     headers.add("Content-Type", "application/json;charset=utf-8");
+    headers.add("Access-Control-Allow-Origin", "*");
     return new ResponseEntity<String>(new JSONObject(result).toString(), headers, HttpStatus.OK);
   }
 
