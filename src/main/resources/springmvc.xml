@@ -12,4 +12,11 @@ http://www.springframework.org/schema/mvc http://www.springframework.org/schema/
 
     <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver" />
 
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter" />
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping">
+        <property name="detectHandlerMethodsInAncestorContexts" value="true" />
+        <property name="useSuffixPatternMatch" value="false" />
+        <property name="alwaysUseFullPath" value="true" />
+    </bean>
+
 </beans>

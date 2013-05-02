@@ -1,5 +1,8 @@
 package com.belerweb.elfinder.controller;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -12,16 +15,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.imageio.ImageIO;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.imgscalr.Scalr;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,7 +44,7 @@ import eu.medsea.util.MimeUtil;
 @Controller
 public class Connector {
 
-  private static final String CONNECTOR = "/connector.elfinder";
+  private static final String CONNECTOR = "/connector.action";
 
   private static final String CMD_OPEN = "cmd=open";
   private static final String CMD_FILE = "cmd=file";
@@ -68,6 +77,63 @@ public class Connector {
   @Autowired
   private FileSystemService fileSystemService;
 
+  @RequestMapping("/tmb/{target}")
+  public String image(@PathVariable String target) {
+    return "forward:/image/" + target + "?width=48&height=48";
+  }
+
+  @RequestMapping("/image/{target}")
+  public ResponseEntity<?> image(@PathVariable String target,
+      @RequestParam(required = false) Integer width,
+      @RequestParam(required = false) Integer height,
+      @RequestHeader(value = "If-Modified-Since", required = false) String ifModifiedSince)
+      throws SQLException {
+    if (ifModifiedSince != null) {
+      return new ResponseEntity<byte[]>(HttpStatus.NOT_MODIFIED);
+    }
+
+    Map<String, Object> cwd = fileSystemService.getCwd(new Target(target));
+    String path = (String) cwd.get("PATH");
+    if (StringUtils.isBlank(path)) {
+      return new ResponseEntity<byte[]>(null, null, HttpStatus.NOT_FOUND);
+    }
+
+    String mime = (String) cwd.get("MIME");
+    HttpHeaders headers = new HttpHeaders();
+    headers.setDate(System.currentTimeMillis());
+    headers.setLastModified(0);
+    headers.setExpires(System.currentTimeMillis() + 31536000000L);
+    headers.setCacheControl("max-age=31536000000");
+    headers.add("Content-Type", mime);
+    try {
+      byte[] data = FileUtils.readFileToByteArray(new File(fileSystemService.getRootDir(), path));
+
+      if (width == null || height == null) {
+        return new ResponseEntity<byte[]>(data, headers, HttpStatus.OK);
+      }
+      BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(data));
+      int oWidth = bufferedImage.getWidth();
+      int oHeight = bufferedImage.getHeight();
+      BufferedImage scaleImage;
+      if (oWidth / (double) oHeight > width / (double) height) {
+        double rate = oHeight / (double) height;
+        scaleImage = Scalr.resize(bufferedImage, (int) (oWidth / rate), height);
+        int x = (scaleImage.getWidth() - width) / 2;
+        scaleImage = Scalr.crop(scaleImage, x, 0, width, height);
+      } else {
+        double rate = oWidth / (double) width;
+        scaleImage = Scalr.resize(bufferedImage, width, (int) (oHeight / rate));
+        int y = (scaleImage.getHeight() - height) / 2;
+        scaleImage = Scalr.crop(scaleImage, 0, y, width, height);
+      }
+      ByteArrayOutputStream scaleOut = new ByteArrayOutputStream();
+      ImageIO.write(scaleImage, mime, scaleOut);
+      return new ResponseEntity<byte[]>(data, headers, HttpStatus.OK);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   @RequestMapping(value = CONNECTOR, method = RequestMethod.OPTIONS)
   public ResponseEntity<String> option() {
     return generateResponse(null);
@@ -80,7 +146,9 @@ public class Connector {
     Map<String, Object> result = new HashMap<String, Object>();
     if (TRUE.equals(init)) {// init
       result.put("api", VERSION);
-      // TODO add options
+      Map<String, Object> options = new HashMap<String, Object>();
+      options.put("tmbUrl", "tmb/");
+      result.put("options", options);
     }
 
     Target _target = new Target(target);
@@ -90,7 +158,6 @@ public class Connector {
     result.put("cwd", dataConvert(cwd));
     result.put("files", dataConvert(files));
     result.put("uplMaxSize", "32M");
-    result.put("options", new JSONObject());
     result.put("netDrivers", new JSONArray());
     return generateResponse(result);
   }
@@ -275,27 +342,34 @@ public class Connector {
       String hash = _target.getVolume() + "_" + UUID.randomUUID().toString();
       String path = generateFile(hash);
       try {
-        FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), new File(fileSystemService
+        byte[] data = multipartFile.getBytes();
+        FileUtils.copyInputStreamToFile(new ByteArrayInputStream(data), new File(fileSystemService
             .getRootDir(), path));
+        Map<String, Object> cwd = fileSystemService.getCwd(_target);
+        HashMap<String, Object> obj = new HashMap<String, Object>();
+        String name = multipartFile.getOriginalFilename();
+        String mime = MimeUtil.getFirstMimeType(MimeUtil.getExtensionMimeTypes(name));
+        obj.put("name", name);
+        obj.put("mime", mime);
+        obj.put("ts", System.currentTimeMillis());
+        obj.put("read", 1);
+        obj.put("write", 1);
+        obj.put("locked", 0);
+        obj.put("size", multipartFile.getSize());
+        obj.put("hash", hash);
+        obj.put("phash", cwd.get("HASH"));
+        obj.put("path", path);
+        if ("image/jpeg".equals(mime) || "image/png".equals(mime) || "image/gif".equals(mime)) {
+          obj.put("tmb", hash);
+          BufferedImage image = ImageIO.read(new ByteArrayInputStream(data));
+          obj.put("dim", image.getWidth() + 'x' + image.getHeight());
+        }
+        fileSystemService.add(_target, cwd, obj);
+        added.add(obj);
       } catch (IOException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
       }
-      Map<String, Object> cwd = fileSystemService.getCwd(_target);
-      HashMap<String, Object> obj = new HashMap<String, Object>();
-      String name = multipartFile.getOriginalFilename();
-      obj.put("name", name);
-      obj.put("mime", MimeUtil.getFirstMimeType(MimeUtil.getExtensionMimeTypes(name)));
-      obj.put("ts", System.currentTimeMillis());
-      obj.put("read", 1);
-      obj.put("write", 1);
-      obj.put("locked", 0);
-      obj.put("size", multipartFile.getSize());
-      obj.put("hash", hash);
-      obj.put("phash", cwd.get("HASH"));
-      obj.put("path", path);
-      fileSystemService.add(_target, cwd, obj);
-      added.add(obj);
     }
 
     result.put("added", added);
