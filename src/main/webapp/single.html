@@ -28,8 +28,7 @@
 					url : 'connector.elfinder'  // connector URL (REQUIRED)
 					// lang: 'ru',             // language (OPTIONAL)
 					,getFileCallback: function(file){
-						window.returnValue = file;
-						window.close();
+						window.top.getFileCallback(file);
 					}
 				}).elfinder('instance');
 			});
