@@ -125,6 +125,7 @@ public class FileSystemService implements InitializingBean {
     String dir = System.getProperty(CONFIG, System.getenv(CONFIG));
     Assert.notNull(dir, "Please config elfinder.root in system properties or envionment variables");
     rootDir = new File(dir);
+    FileUtils.forceMkdir(rootDir);
     Assert.isTrue(rootDir.isDirectory() && rootDir.canWrite(), dir
         + " should be a writeable directory");
     initDatabase();

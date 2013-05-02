@@ -1,0 +1,1 @@
+web: java -Dfile.encoding=utf-8 -Delfinder.root=target/elfinder $JAVA_OPTS -jar target/dependency/jetty-runner.jar --port $PORT target/*.war
