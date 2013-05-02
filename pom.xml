@@ -12,6 +12,7 @@
     <groupId>com.belerweb</groupId>
     <artifactId>elfinder-j-connector</artifactId>
     <version>1.0.0</version>
+    <packaging>war</packaging>
 
     <name>Elfinder Java Connector</name>
     <description>This is a Java connector (backend) for elFinder.</description>
@@ -123,9 +124,6 @@
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
                 <version>${dependency.jetty.version}</version>
-                <configuration>
-                    <useTestScope>true</useTestScope>
-                </configuration>
             </plugin>
         </plugins>
         <pluginManagement>
