@@ -54,6 +54,7 @@
         <dependency.commons-lang.version>2.6</dependency.commons-lang.version>
         <dependency.dbutils.version>1.5</dependency.dbutils.version>
         <dependency.jetty.version>9.0.0.v20130308</dependency.jetty.version>
+        <dependency.servlet-api.version> 2.5</dependency.servlet-api.version>
     </properties>
 
     <dependencies>
@@ -101,6 +102,13 @@
             <groupId>org.imgscalr</groupId>
             <artifactId>imgscalr-lib</artifactId>
             <version>4.2</version>
+        </dependency>
+        <!-- provided dependency -->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+            <version>${dependency.servlet-api.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
