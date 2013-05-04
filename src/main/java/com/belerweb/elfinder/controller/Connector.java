@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -141,13 +142,14 @@ public class Connector {
 
   @RequestMapping(value = CONNECTOR, params = CMD_OPEN)
   public ResponseEntity<String> open(@RequestParam(required = false) Boolean init,
-      @RequestParam(required = false) String target, @RequestParam(required = false) Boolean tree)
-      throws SQLException {
+      @RequestParam(required = false) String target, @RequestParam(required = false) Boolean tree,
+      HttpServletRequest request) throws SQLException {
     Map<String, Object> result = new HashMap<String, Object>();
     if (TRUE.equals(init)) {// init
       result.put("api", VERSION);
       Map<String, Object> options = new HashMap<String, Object>();
-      options.put("tmbUrl", "tmb/");
+      options.put("tmbUrl", request.getScheme() + "://" + request.getServerName()
+          + request.getContextPath() + "/tmb/");
       result.put("options", options);
     }
 
